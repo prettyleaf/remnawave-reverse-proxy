@@ -966,6 +966,12 @@ generate_password() {
     echo "$password"
 }
 
+generate_metrics_password() {
+    local metrics_password=""
+    metrics_password=$(openssl rand -hex 24)
+    echo "$metrics_password"
+}
+
 show_menu() {
     echo -e ""
     echo -e "${COLOR_GREEN}${LANG[MENU_TITLE]}${COLOR_RESET}"
@@ -3338,7 +3344,7 @@ install_remnawave() {
     cookies_random2=$(generate_user)
 
     METRICS_USER=$(generate_user)
-    METRICS_PASS=$(generate_password)
+    METRICS_PASS=$(generate_metrics_password)
 
     JWT_AUTH_SECRET=$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | head -c 64)
     JWT_API_TOKENS_SECRET=$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | head -c 64)
