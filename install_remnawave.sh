@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="2.2.0"
+SCRIPT_VERSION="2.2.2c"
 UPDATE_AVAILABLE=false
 DIR_REMNAWAVE="/usr/local/remnawave_reverse/"
 LANG_FILE="${DIR_REMNAWAVE}selected_language"
@@ -269,7 +269,7 @@ set_language() {
                 [SELFSTEAL]="Enter the selfsteal domain for the node specified during panel installation:"
                 [PANEL_IP_PROMPT]="Enter the IP address of the panel to establish a connection between the panel and the node:"
                 [IP_ERROR]="Enter a valid IP address in the format X.X.X.X (e.g., 192.168.1.1)"
-                [CERT_PROMPT]="Enter the certificate obtained from the panel, keeping the SSL_CERT= line (paste the content and press Enter twice):"
+                [CERT_PROMPT]="Enter the certificate obtained from the panel (paste the content and press Enter twice):"
                 [CERT_CONFIRM]="Are you sure the certificate is correct? (y/n):"
                 [ABORT_MESSAGE]="Installation aborted by user"
                 [SUCCESS_MESSAGE]="Node successfully connected"
@@ -660,7 +660,7 @@ set_language() {
                 [SELFSTEAL]="Введите selfsteal домен для ноды, который указали при установке панели:"
                 [PANEL_IP_PROMPT]="Введите IP адрес панели, чтобы установить соединение между панелью и ноды:"
                 [IP_ERROR]="Введите корректный IP-адрес в формате X.X.X.X (например, 192.168.1.1)"
-                [CERT_PROMPT]="Введите сертификат, полученный от панели, сохраняя строку SSL_CERT= (вставьте содержимое и 2 раза нажмите Enter):"
+                [CERT_PROMPT]="Введите сертификат, полученный от панели (вставьте содержимое и 2 раза нажмите Enter):"
                 [CERT_CONFIRM]="Вы уверены, что сертификат правильный? (y/n):"
                 [ABORT_MESSAGE]="Установка прервана пользователем"
                 [SUCCESS_MESSAGE]="Нода успешно подключена"
@@ -902,7 +902,7 @@ start_panel_node() {
 
     cd "$dir" || { echo -e "${COLOR_RED}${LANG[CHANGE_DIR_FAILED]} $dir${COLOR_RESET}"; exit 1; }
 
-    if docker ps -q --filter "ancestor=remnawave/backend:latest" | grep -q . || docker ps -q --filter "ancestor=remnawave/node:latest" | grep -q .; then
+    if docker ps -q --filter "ancestor=remnawave/backend:latest" | grep -q . || docker ps -q --filter "ancestor=remnawave/node:latest" | grep -q . || docker ps -q --filter "ancestor=remnawave/backend:2" | grep -q .; then
         echo -e "${COLOR_GREEN}${LANG[PANEL_RUNNING]}${COLOR_RESET}"
     else
         echo -e "${COLOR_YELLOW}${LANG[STARTING_PANEL_NODE]}...${COLOR_RESET}"
@@ -923,7 +923,7 @@ stop_panel_node() {
     fi
 
     cd "$dir" || { echo -e "${COLOR_RED}${LANG[CHANGE_DIR_FAILED]} $dir${COLOR_RESET}"; exit 1; }
-    if ! docker ps -q --filter "ancestor=remnawave/backend:latest" | grep -q . && ! docker ps -q --filter "ancestor=remnawave/node:latest" | grep -q .; then
+    if ! docker ps -q --filter "ancestor=remnawave/backend:latest" | grep -q . && ! docker ps -q --filter "ancestor=remnawave/node:latest" | grep -q . && ! docker ps -q --filter "ancestor=remnawave/backend:2" | grep -q .; then
         echo -e "${COLOR_GREEN}${LANG[PANEL_STOPPED]}${COLOR_RESET}"
     else
         echo -e "${COLOR_YELLOW}${LANG[STOPPING_REMNAWAVE]}...${COLOR_RESET}"
@@ -1495,7 +1495,7 @@ view_logs() {
 
     cd "$dir" || { echo -e "${COLOR_RED}${LANG[CHANGE_DIR_FAILED]} $dir${COLOR_RESET}"; exit 1; }
 
-    if ! docker ps -q --filter "ancestor=remnawave/backend:latest" | grep -q . && ! docker ps -q --filter "ancestor=remnawave/node:latest" | grep -q .; then
+    if ! docker ps -q --filter "ancestor=remnawave/backend:latest" | grep -q . && ! docker ps -q --filter "ancestor=remnawave/node:latest" | grep -q . && ! docker ps -q --filter "ancestor=remnawave/backend:2" | grep -q .; then
         echo -e "${COLOR_RED}${LANG[CONTAINER_NOT_RUNNING]}${COLOR_RESET}"
         exit 1
     fi
@@ -1680,7 +1680,7 @@ manage_warp() {
 
     case $WARP_OPTION in
         1)
-            if [ ! -f "/opt/remnawave/.env-node" ]; then
+            if ! grep -q "remnanode:" /opt/remnawave/docker-compose.yml; then
                 echo -e "${COLOR_RED}${LANG[WARP_NO_NODE]}${COLOR_RESET}"
                 exit 1
             fi
@@ -2641,8 +2641,8 @@ spinner() {
   local pid=$1
   local text=$2
 
-  export LC_ALL=en_US.UTF-8
-  export LANG=en_US.UTF-8
+  export LC_ALL=C.UTF-8
+  export LANG=C.UTF-8
 
   local spinstr='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
   local text_code="$COLOR_GREEN"
@@ -2844,21 +2844,6 @@ install_packages() {
             echo -e "${COLOR_RED}${LANG[START_CRON_ERROR]}${COLOR_RESET}" >&2
             return 1
         fi
-    fi
-
-    if [ ! -f /etc/locale.gen ]; then
-        echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
-    fi
-    if ! grep -q "^en_US.UTF-8 UTF-8" /etc/locale.gen; then
-        if grep -q "^# en_US.UTF-8 UTF-8" /etc/locale.gen; then
-            sed -i 's/^# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
-        else
-            echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
-        fi
-    fi
-    if ! locale-gen || ! update-locale LANG=en_US.UTF-8; then
-        echo -e "${COLOR_RED}${LANG[ERROR_CONFIGURE_LOCALES]}${COLOR_RESET}" >&2
-        return 1
     fi
 
     if ! ping -c 1 download.docker.com >/dev/null 2>&1; then
@@ -4081,15 +4066,15 @@ handle_certificates() {
         echo -e "${COLOR_YELLOW}${LANG[ADDING_CRON_FOR_EXISTING_CERTS]}${COLOR_RESET}"
         if [ "$min_days_left" -le 30 ]; then
             echo -e "${COLOR_YELLOW}${LANG[CERT_EXPIRY_SOON]} $min_days_left ${LANG[DAYS]}${COLOR_RESET}"
-            add_cron_rule "0 5 * * * $cron_command"
+            add_cron_rule "0 5 * * 0 $cron_command"
         else
-            add_cron_rule "0 5 1 */2 * $cron_command"
+            add_cron_rule "0 5 * * 0 $cron_command"
         fi
-    elif [ "$min_days_left" -le 30 ] && ! crontab -u root -l 2>/dev/null | grep -q "0 5 * * *.*$cron_command"; then
+    elif [ "$min_days_left" -le 30 ] && ! crontab -u root -l 2>/dev/null | grep -q "0 5 * * 0.*$cron_command"; then
         echo -e "${COLOR_YELLOW}${LANG[CERT_EXPIRY_SOON]} $min_days_left ${LANG[DAYS]}${COLOR_RESET}"
         echo -e "${COLOR_YELLOW}${LANG[UPDATING_CRON]}${COLOR_RESET}"
         crontab -u root -l 2>/dev/null | grep -v "/usr/bin/certbot renew" | crontab -u root -
-        add_cron_rule "0 5 * * * $cron_command"
+        add_cron_rule "0 5 * * 0 $cron_command"
     else
         echo -e "${COLOR_YELLOW}${LANG[CRON_ALREADY_EXISTS]}${COLOR_RESET}"
     fi
@@ -4572,11 +4557,13 @@ server {
 
     root /var/www/html;
     index index.html;
+    add_header X-Robots-Tag "noindex, nofollow, noarchive, nosnippet, noimageindex" always;
 }
 
 server {
     listen unix:/dev/shm/nginx.sock ssl proxy_protocol default_server;
     server_name _;
+    add_header X-Robots-Tag "noindex, nofollow, noarchive, nosnippet, noimageindex" always;
     ssl_reject_handshake on;
     return 444;
 }
@@ -5314,11 +5301,13 @@ server {
 
     root /var/www/html;
     index index.html;
+    add_header X-Robots-Tag "noindex, nofollow, noarchive, nosnippet, noimageindex" always;
 }
 
 server {
     listen unix:/dev/shm/nginx.sock ssl proxy_protocol default_server;
     server_name _;
+    add_header X-Robots-Tag "noindex, nofollow, noarchive, nosnippet, noimageindex" always;
     ssl_reject_handshake on;
     return 444;
 }
