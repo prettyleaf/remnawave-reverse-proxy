@@ -13,7 +13,7 @@
     "@astrojs/starlight": "^0.37.3",
     "@lorenzo_lewis/starlight-utils": "^0.3.2",
     "astro": "^5.16.11",
-    "astro-auto-import": "^0.4.4",
+    "astro-auto-import": "^0.5.1",
     "sharp": "^0.34.5",
     "starlight-contributor-list": "^0.3.1",
     "starlight-github-alerts": "^0.1.1",
